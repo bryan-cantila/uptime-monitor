@@ -12,6 +12,7 @@ A self-hostable website uptime monitor. **Supabase** stores your monitors, check
 
 ![Dashboard status grid](docs/dashboard.png)
 ![Connect your Supabase project](docs/settings.png)
+![Mobile app view](docs/mobile.png)
 
 ## Architecture
 
@@ -69,6 +70,15 @@ Open `dashboard/index.html` in a browser — or deploy the `dashboard/` folder t
 - A passing check while an incident is open → resolves it (recording downtime) + fires a **RECOVERED** alert.
 - Alert targets (Telegram / email / webhook) are managed in the dashboard; n8n reads them per user at alert time.
 
+## v2 — Mobile app
+
+The dashboard is an installable app (PWA) — no app store needed:
+
+- **Android:** open the dashboard in Chrome → menu (⋮) → **Install app** (or **Add to Home screen**). It launches full-screen like a native app.
+- **iOS:** open the dashboard in Safari → **Share** → **Add to Home Screen**. Same standalone experience.
+
+The app shell works offline once installed, but live status needs connectivity (it reads your Supabase project). Mobile notifications come through the alert targets you already configured — Telegram/email/webhook — so install Telegram on your phone and add your chat as a target for push-style DOWN alerts.
+
 ## Files
 
 ```
@@ -77,6 +87,11 @@ supabase/seed.sql                 optional demo rows
 n8n/check-runner.json             scheduled probing + incident state machine
 n8n/alert-dispatcher.json         Telegram / email / webhook fan-out
 dashboard/index.html              single-file status dashboard (no build)
+dashboard/manifest.json           PWA manifest (installable mobile app)
+dashboard/sw.js                   service worker (offline app shell)
+dashboard/icon-192.png            app icon 192px
+dashboard/icon-512.png            app icon 512px (maskable)
+dashboard/icon-180.png            Apple touch icon
 .env.example                      every credential you need, with where it goes
 assets/logo.png                   project logo
 ```
