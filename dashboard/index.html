@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uptime Monitor</title>
+<link rel="icon" href="../assets/logo.png">
+<style>
+:root{
+  --bg:#0b0f1a; --bg2:#111827; --card:#151d2e; --line:#243049;
+  --txt:#e8edf7; --mut:#8b98b3; --ind:#6366f1; --grn:#22c55e; --red:#ef4444;
+  --amb:#f59e0b; --r:12px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--ind)}
+.wrap{max-width:1080px;margin:0 auto;padding:24px 18px 60px}
+header.top{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);margin-bottom:20px;flex-wrap:wrap}
+header.top img{width:38px;height:38px;border-radius:10px}
+header.top h1{font-size:19px;margin:0}
+header.top .sub{color:var(--mut);font-size:12.5px;margin:0}
+.spacer{flex:1}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px}
+h2{font-size:16px;margin:0 0 12px}
+h3{font-size:14px;margin:18px 0 8px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select,textarea{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:10px 12px;font-size:14px}
+input:focus,select:focus{outline:2px solid var(--ind);border-color:var(--ind)}
+button{cursor:pointer;border:1px solid var(--line);background:var(--bg2);color:var(--txt);border-radius:8px;padding:10px 16px;font-size:14px}
+button.primary{background:var(--ind);border-color:var(--ind);color:#fff;font-weight:600}
+button.danger{color:#fca5a5;border-color:#7f1d1d;background:#1f1215}
+button.ghost{background:transparent}
+button.small{padding:6px 10px;font-size:12.5px}
+button:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.row>*{flex:1;min-width:150px}
+.err{background:#2a1215;border:1px solid #7f1d1d;color:#fca5a5;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:13.5px}
+.okmsg{background:#0f2a1a;border:1px solid #14532d;color:#86efac;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:13.5px}
+.mut{color:var(--mut);font-size:13px}
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.tabs button{border-radius:999px}
+.tabs button.on{background:var(--ind);border-color:var(--ind);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.mon{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;cursor:pointer}
+.mon:hover{border-color:var(--ind)}
+.mon .nm{font-weight:650;font-size:15px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.mon .url{color:var(--mut);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 10px;letter-spacing:.04em}
+.pill.up{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.4)}
+.pill.down{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.4)}
+.pill.pause{background:rgba(139,152,179,.15);color:var(--mut);border:1px solid var(--line)}
+.stats{display:flex;gap:14px;margin:10px 0 6px;font-size:13px;color:var(--mut)}
+.stats b{color:var(--txt);font-size:15px}
+canvas.spark{width:100%;height:46px;display:block;margin-top:8px;background:var(--bg2);border-radius:8px}
+.checks{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;font-size:12.5px}
+.checks .cr{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #1e2740;color:var(--mut)}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px}
+.dot.up{background:var(--grn)}.dot.down{background:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;color:var(--mut);font-weight:600;padding:8px;border-bottom:1px solid var(--line)}
+td{padding:9px 8px;border-bottom:1px solid #1a2338;vertical-align:top}
+.badge{font-size:11.5px;font-weight:700;border-radius:6px;padding:2px 8px}
+.badge.open{background:rgba(239,68,68,.15);color:#f87171}
+.badge.res{background:rgba(34,197,94,.12);color:#4ade80}
+.empty{color:var(--mut);text-align:center;padding:26px 10px;font-size:14px}
+.kv{font-size:12.5px;color:var(--mut);word-break:break-all}
+footer{margin-top:34px;color:var(--mut);font-size:12.5px;text-align:center}
+.conn{font-size:12.5px;color:var(--mut);display:flex;align-items:center;gap:6px}
+.conn .dot{margin:0}
+.hidden{display:none!important}
+@media(max-width:640px){.row>*{min-width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <img src="../assets/logo.png" alt="Uptime Monitor logo">
+    <div><h1>Uptime Monitor</h1><p class="sub">Supabase + n8n website monitoring &middot; Created by devuvo</p></div>
+    <div class="spacer"></div>
+    <div id="connState" class="conn hidden"></div>
+    <button id="btnSignOut" class="ghost small hidden">Sign out</button>
+    <button id="btnDisconnect" class="ghost small hidden">Disconnect</button>
+  </header>
+
+  <!-- ============ SETTINGS (first run) ============ -->
+  <section id="view-settings" class="card hidden">
+    <h2>Connect your Supabase project</h2>
+    <p class="mut">Your URL and anon key are stored only in this browser's localStorage. They are never sent anywhere except your own Supabase project.</p>
+    <div id="settingsErr"></div>
+    <label>Supabase project URL</label>
+    <input id="cfgUrl" placeholder="https://xyzcompany.supabase.co" autocomplete="off" spellcheck="false">
+    <label>Supabase anon (public) key</label>
+    <input id="cfgKey" placeholder="eyJhbGciOi..." autocomplete="off" spellcheck="false">
+    <div class="row" style="margin-top:14px">
+      <div><button id="btnConnect" class="primary" style="width:100%">Connect</button></div>
+    </div>
+    <p class="mut">No Supabase project yet? <a href="https://supabase.com" target="_blank" rel="noopener">Create a free one</a>, run <span class="kv">supabase/migrations/001_init.sql</span> in its SQL editor, then paste the URL + anon key above. Full guide in the README.</p>
+  </section>
+
+  <!-- ============ AUTH ============ -->
+  <section id="view-auth" class="card hidden">
+    <h2>Sign in</h2>
+    <div id="authErr"></div>
+    <label>Email</label><input id="authEmail" type="email" autocomplete="email">
+    <label>Password</label><input id="authPass" type="password" autocomplete="current-password">
+    <div class="row" style="margin-top:14px">
+      <div><button id="btnSignIn" class="primary" style="width:100%">Sign in</button></div>
+      <div><button id="btnSignUp" style="width:100%">Create account</button></div>
+    </div>
+    <p class="mut">Accounts live in your own Supabase project's auth.users — nothing is shared.</p>
+  </section>
+
+  <!-- ============ APP ============ -->
+  <main id="view-app" class="hidden">
+    <div class="tabs">
+      <button data-tab="status" class="on">Status</button>
+      <button data-tab="incidents">Incidents <span id="incBadge"></span></button>
+      <button data-tab="monitors">Monitors</button>
+      <button data-tab="alerts">Alert targets</button>
+    </div>
+
+    <section id="tab-status">
+      <div id="statusGrid" class="grid"></div>
+    </section>
+
+    <section id="tab-incidents" class="hidden">
+      <div class="card"><h2>Incidents</h2><div id="incidentList"></div></div>
+    </section>
+
+    <section id="tab-monitors" class="hidden">
+      <div class="card">
+        <h2 id="monFormTitle">Add monitor</h2>
+        <div id="monErr"></div>
+        <div class="row">
+          <div><label>Name</label><input id="mName" placeholder="My website"></div>
+          <div><label>URL</label><input id="mUrl" placeholder="https://example.com" spellcheck="false"></div>
+        </div>
+        <div class="row">
+          <div><label>Check every (minutes)</label><input id="mInterval" type="number" min="1" value="5"></div>
+          <div><label>Expected HTTP status</label><input id="mExpected" type="number" value="200"></div>
+          <div><label>Timeout (ms)</label><input id="mTimeout" type="number" min="1000" step="1000" value="10000"></div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <div><button id="btnSaveMonitor" class="primary" style="width:100%">Save monitor</button></div>
+          <div><button id="btnCancelEdit" class="ghost hidden" style="width:100%">Cancel</button></div>
+        </div>
+        <p class="mut">The n8n check-runner probes each active monitor when its interval has elapsed since the last check.</p>
+      </div>
+      <div class="card"><h2>Your monitors</h2><div id="monitorList"></div></div>
+    </section>
+
+    <section id="tab-alerts" class="hidden">
+      <div class="card">
+        <h2>Add alert target</h2>
+        <div id="alErr"></div>
+        <div class="row">
+          <div><label>Type</label><select id="aType"><option value="telegram">Telegram</option><option value="email">Email</option><option value="webhook">Webhook</option></select></div>
+          <div><label>Label</label><input id="aLabel" placeholder="My phone"></div>
+        </div>
+        <div id="aCfgTelegram">
+          <div class="row"><div><label>Bot token</label><input id="aBotToken" placeholder="123456:ABC..." spellcheck="false"></div>
+          <div><label>Chat ID</label><input id="aChatId" placeholder="123456789" spellcheck="false"></div></div>
+          <p class="mut">Create a bot with @BotFather for the token; message @userinfobot for your chat ID.</p>
+        </div>
+        <div id="aCfgEmail" class="hidden">
+          <label>Send alerts to</label><input id="aEmailTo" type="email" placeholder="you@example.com">
+          <p class="mut">SMTP credentials are configured once in n8n, not here.</p>
+        </div>
+        <div id="aCfgWebhook" class="hidden">
+          <label>Webhook URL</label><input id="aWebhookUrl" placeholder="https://..." spellcheck="false">
+        </div>
+        <div class="row" style="margin-top:14px"><div><button id="btnSaveTarget" class="primary" style="width:100%">Save target</button></div></div>
+      </div>
+      <div class="card"><h2>Your alert targets</h2><div id="targetList"></div></div>
+    </section>
+  </main>
+
+  <footer>Uptime Monitor &middot; bring your own Supabase + n8n &middot; Created by devuvo</footer>
+</div>
+
+<!-- supabase-js v2 (CDN). Only used after you enter your own project URL + anon key. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+"use strict";
+var $ = function(id){ return document.getElementById(id); };
+var sb = null, user = null, monitors = [], checksByMon = {}, expandedMon = null, rtChannel = null;
+
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function ago(ts){ var s = Math.max(0, Math.round((Date.now() - new Date(ts).getTime())/1000));
+  if (s < 60) return s + 's ago'; var m = Math.round(s/60); if (m < 60) return m + 'm ago';
+  var h = Math.round(m/60); if (h < 48) return h + 'h ago'; return Math.round(h/24) + 'd ago'; }
+function dur(sec){ if (sec == null) return '—'; var m = Math.round(sec/60);
+  if (m < 60) return m + 'm'; var h = Math.floor(m/60); return h + 'h ' + (m%60) + 'm'; }
+function show(el, msg, ok){ el.innerHTML = '<div class="' + (ok ? 'okmsg' : 'err') + '">' + esc(msg) + '</div>'; }
+function clearMsg(el){ el.innerHTML = ''; }
+
+/* ---------- views ---------- */
+function setView(name){
+  ['view-settings','view-auth','view-app'].forEach(function(v){ $(v).classList.add('hidden'); });
+  $('view-settings').classList.toggle('hidden', name !== 'settings');
+  $('view-auth').classList.toggle('hidden', name !== 'auth');
+  $('view-app').classList.toggle('hidden', name !== 'app');
+  $('btnSignOut').classList.toggle('hidden', name !== 'app');
+  $('btnDisconnect').classList.toggle('hidden', name === 'settings');
+  if (name === 'app') setConn(true); else setConn(false);
+}
+function setConn(on){
+  var el = $('connState');
+  if (!on){ el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  el.innerHTML = '<span class="dot up"></span> connected' + (user ? ' as ' + esc(user.email) : '');
+}
+
+/* ---------- settings ---------- */
+function getCfg(){ try { return JSON.parse(localStorage.getItem('uptime_cfg') || 'null'); } catch(e){ return null; } }
+
+$('btnConnect').addEventListener('click', async function(){
+  clearMsg($('settingsErr'));
+  var url = $('cfgUrl').value.trim().replace(/\/+$/,''), key = $('cfgKey').value.trim();
+  if (!/^https:\/\/.+\.supabase\.co$/.test(url) && !/^https:\/\//.test(url)){ show($('settingsErr'), 'That does not look like a Supabase project URL.'); return; }
+  if (key.length < 20){ show($('settingsErr'), 'Please paste your anon (public) key.'); return; }
+  try {
+    if (typeof supabase === 'undefined' || !supabase.createClient) throw new Error('supabase-js failed to load (check your connection).');
+    var client = supabase.createClient(url, key);
+    var res = await client.from('monitors').select('id', { count: 'exact', head: true });
+    if (res.error) throw res.error;
+    localStorage.setItem('uptime_cfg', JSON.stringify({ url: url, anonKey: key }));
+    sb = client;
+    boot();
+  } catch(e){
+    show($('settingsErr'), 'Could not connect: ' + (e.message || e) + ' — check the URL/key and that the migration has been run.');
+  }
+});
+
+$('btnDisconnect').addEventListener('click', async function(){
+  try { if (sb) await sb.auth.signOut(); } catch(e){}
+  if (rtChannel && sb) { try { await sb.removeChannel(rtChannel); } catch(e){} rtChannel = null; }
+  localStorage.removeItem('uptime_cfg'); sb = null; user = null;
+  $('cfgUrl').value = ''; $('cfgKey').value = '';
+  setView('settings');
+});
+
+/* ---------- auth ---------- */
+$('btnSignIn').addEventListener('click', function(){ doAuth('signin'); });
+$('btnSignUp').addEventListener('click', function(){ doAuth('signup'); });
+async function doAuth(mode){
+  clearMsg($('authErr'));
+  var email = $('authEmail').value.trim(), pass = $('authPass').value;
+  if (!email || !pass){ show($('authErr'), 'Enter email and password.'); return; }
+  try {
+    var res = mode === 'signin'
+      ? await sb.auth.signInWithPassword({ email: email, password: pass })
+      : await sb.auth.signUp({ email: email, password: pass });
+    if (res.error) throw res.error;
+    user = res.data.user || (await sb.auth.getUser()).data.user;
+    enterApp();
+  } catch(e){ show($('authErr'), e.message || String(e)); }
+}
+$('btnSignOut').addEventListener('click', async function(){
+  try { await sb.auth.signOut(); } catch(e){}
+  if (rtChannel){ try { await sb.removeChannel(rtChannel); } catch(e){} rtChannel = null; }
+  user = null; setView('auth');
+});
+
+/* ---------- data ---------- */
+async function loadAll(){
+  var mr = await sb.from('monitors').select('*').order('created_at');
+  if (mr.error) throw mr.error;
+  monitors = mr.data || [];
+  var since = new Date(Date.now() - 24*3600*1000).toISOString();
+  var cr = await sb.from('checks').select('monitor_id,checked_at,status_code,response_time_ms,is_up,error')
+    .gte('checked_at', since).order('checked_at', { ascending: false }).limit(5000);
+  if (cr.error) throw cr.error;
+  checksByMon = {};
+  (cr.data || []).forEach(function(c){ (checksByMon[c.monitor_id] = checksByMon[c.monitor_id] || []).push(c); });
+  var ir = await sb.from('incidents').select('*').order('started_at', { ascending: false }).limit(100);
+  if (ir.error) throw ir.error;
+  renderStatus(); renderIncidents(ir.data || []); renderMonitors(); loadTargets();
+}
+async function loadTargets(){
+  var r = await sb.from('alert_targets').select('*').order('created_at');
+  var el = $('targetList');
+  if (r.error){ el.innerHTML = '<div class="empty">Could not load targets.</div>'; return; }
+  if (!r.data.length){ el.innerHTML = '<div class="empty">No alert targets yet. Add one above — the n8n dispatcher will use it.</div>'; return; }
+  el.innerHTML = '<table><tr><th>Label</th><th>Type</th><th>Details</th><th></th></tr>' + r.data.map(function(t){
+    var det = t.type === 'email' ? esc((t.config||{}).to || '') : t.type === 'telegram' ? 'chat ' + esc((t.config||{}).chat_id || '') : esc((t.config||{}).url || '');
+    return '<tr><td>' + esc(t.label) + '</td><td>' + esc(t.type) + '</td><td class="kv">' + det + '</td>' +
+      '<td><button class="danger small" data-del-target="' + t.id + '">Delete</button></td></tr>';
+  }).join('') + '</table>';
+  el.querySelectorAll('[data-del-target]').forEach(function(b){ b.addEventListener('click', async function(){
+    if (!confirm('Delete this alert target?')) return;
+    await sb.from('alert_targets').delete().eq('id', b.getAttribute('data-del-target'));
+    loadTargets();
+  });});
+}
+
+/* ---------- status grid ---------- */
+function uptime24(list){ if (!list || !list.length) return null;
+  var up = list.filter(function(c){ return c.is_up; }).length;
+  return Math.round(up / list.length * 100); }
+
+function renderStatus(){
+  var g = $('statusGrid');
+  if (!monitors.length){ g.innerHTML = '<div class="card empty">No monitors yet — add your first one under the Monitors tab.</div>'; return; }
+  g.innerHTML = '';
+  monitors.forEach(function(m){
+    var list = checksByMon[m.id] || [];
+    var last = list[0];
+    var pct = uptime24(list);
+    var state = !m.is_active ? 'pause' : (!last ? 'pause' : (last.is_up ? 'up' : 'down'));
+    var pill = state === 'up' ? '<span class="pill up">UP</span>' : state === 'down' ? '<span class="pill down">DOWN</span>' : '<span class="pill pause">PAUSED</span>';
+    var card = document.createElement('div');
+    card.className = 'mon';
+    card.innerHTML =
+      '<div class="nm"><span>' + esc(m.name) + '</span>' + pill + '</div>' +
+      '<div class="url">' + esc(m.url) + '</div>' +
+      '<div class="stats"><div><b>' + (pct == null ? '—' : pct + '%') + '</b><br>24h uptime</div>' +
+      '<div><b>' + (last && last.response_time_ms != null ? last.response_time_ms + 'ms' : '—') + '</b><br>last response</div>' +
+      '<div><b>' + (last ? ago(last.checked_at) : 'never') + '</b><br>last check</div></div>' +
+      '<canvas class="spark" width="600" height="120"></canvas>' +
+      '<div class="checks hidden"></div>';
+    card.addEventListener('click', function(){ toggleExpand(m, card); });
+    g.appendChild(card);
+    drawSpark(card.querySelector('canvas'), list.slice(0, 60).reverse());
+  });
+}
+function drawSpark(cv, pts){
+  var ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+  if (!pts.length){ ctx.fillStyle = '#8b98b3'; ctx.font = '26px sans-serif'; ctx.fillText('no data yet', 18, H/2); return; }
+  var max = Math.max.apply(null, pts.map(function(p){ return p.response_time_ms || 0; }).concat([1]));
+  ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 3; ctx.beginPath();
+  pts.forEach(function(p, i){
+    var x = 8 + i * (W - 16) / Math.max(1, pts.length - 1);
+    var y = H - 10 - ((p.response_time_ms || 0) / max) * (H - 24);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  });
+  ctx.stroke();
+  pts.forEach(function(p, i){
+    if (p.is_up) return;
+    var x = 8 + i * (W - 16) / Math.max(1, pts.length - 1);
+    ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(x, H/2, 7, 0, 7); ctx.fill();
+  });
+}
+function toggleExpand(m, card){
+  var box = card.querySelector('.checks');
+  if (expandedMon === m.id){ expandedMon = null; box.classList.add('hidden'); return; }
+  expandedMon = m.id;
+  document.querySelectorAll('.checks').forEach(function(c){ c.classList.add('hidden'); });
+  var list = (checksByMon[m.id] || []).slice(0, 20);
+  box.innerHTML = list.length ? list.map(function(c){
+    return '<div class="cr"><span><span class="dot ' + (c.is_up ? 'up' : 'down') + '"></span>' +
+      (c.status_code != null ? c.status_code : 'no response') +
+      (c.error ? ' — ' + esc(c.error).slice(0, 60) : '') + '</span><span>' +
+      (c.response_time_ms != null ? c.response_time_ms + 'ms · ' : '') + ago(c.checked_at) + '</span></div>';
+  }).join('') : '<div class="empty">No checks yet — the n8n runner will populate this.</div>';
+  box.classList.remove('hidden');
+}
+
+/* ---------- incidents ---------- */
+function renderIncidents(list){
+  var el = $('incidentList');
+  var open = list.filter(function(i){ return !i.resolved_at; }).length;
+  $('incBadge').textContent = open ? '(' + open + ' open)' : '';
+  if (!list.length){ el.innerHTML = '<div class="empty">No incidents. When a monitor goes down, it appears here.</div>'; return; }
+  var monName = function(id){ var m = monitors.find(function(x){ return x.id === id; }); return m ? m.name : id.slice(0, 8); };
+  el.innerHTML = '<table><tr><th>Monitor</th><th>Started</th><th>Status</th><th>Downtime</th></tr>' + list.map(function(i){
+    return '<tr><td>' + esc(monName(i.monitor_id)) + '</td><td>' + ago(i.started_at) + '</td><td>' +
+      (i.resolved_at ? '<span class="badge res">RESOLVED</span>' : '<span class="badge open">OPEN</span>') + '</td><td>' +
+      (i.resolved_at ? dur(i.downtime_seconds) : 'ongoing') + '</td></tr>';
+  }).join('') + '</table>';
+}
+
+/* ---------- monitors CRUD ---------- */
+var editingId = null;
+function renderMonitors(){
+  var el = $('monitorList');
+  if (!monitors.length){ el.innerHTML = '<div class="empty">No monitors yet.</div>'; return; }
+  el.innerHTML = '<table><tr><th>Name</th><th>URL</th><th>Every</th><th>Status</th><th></th></tr>' + monitors.map(function(m){
+    return '<tr><td>' + esc(m.name) + '</td><td class="kv">' + esc(m.url) + '</td><td>' + m.interval_minutes + 'm</td>' +
+      '<td>' + (m.is_active ? '<span class="badge res">ACTIVE</span>' : '<span class="badge open">PAUSED</span>') + '</td><td style="white-space:nowrap">' +
+      '<button class="small" data-edit="' + m.id + '">Edit</button> ' +
+      '<button class="small" data-toggle="' + m.id + '">' + (m.is_active ? 'Pause' : 'Resume') + '</button> ' +
+      '<button class="danger small" data-del="' + m.id + '">Delete</button></td></tr>';
+  }).join('') + '</table>';
+  el.querySelectorAll('[data-edit]').forEach(function(b){ b.addEventListener('click', function(){
+    var m = monitors.find(function(x){ return x.id === b.getAttribute('data-edit'); });
+    editingId = m.id; $('monFormTitle').textContent = 'Edit monitor';
+    $('mName').value = m.name; $('mUrl').value = m.url; $('mInterval').value = m.interval_minutes;
+    $('mExpected').value = m.expected_status; $('mTimeout').value = m.timeout_ms;
+    $('btnCancelEdit').classList.remove('hidden'); window.scrollTo(0, 0);
+  });});
+  el.querySelectorAll('[data-toggle]').forEach(function(b){ b.addEventListener('click', async function(){
+    var m = monitors.find(function(x){ return x.id === b.getAttribute('data-toggle'); });
+    await sb.from('monitors').update({ is_active: !m.is_active }).eq('id', m.id);
+    loadAll();
+  });});
+  el.querySelectorAll('[data-del]').forEach(function(b){ b.addEventListener('click', async function(){
+    if (!confirm('Delete this monitor and all its checks/incidents?')) return;
+    await sb.from('monitors').delete().eq('id', b.getAttribute('data-del'));
+    loadAll();
+  });});
+}
+$('btnSaveMonitor').addEventListener('click', async function(){
+  clearMsg($('monErr'));
+  var body = { name: $('mName').value.trim(), url: $('mUrl').value.trim(),
+    interval_minutes: parseInt($('mInterval').value, 10) || 5,
+    expected_status: parseInt($('mExpected').value, 10) || 200,
+    timeout_ms: parseInt($('mTimeout').value, 10) || 10000 };
+  if (!body.name || !/^https?:\/\/.+/.test(body.url)){ show($('monErr'), 'Give the monitor a name and a valid http(s) URL.'); return; }
+  try {
+    var res = editingId
+      ? await sb.from('monitors').update(body).eq('id', editingId)
+      : await sb.from('monitors').insert(Object.assign({ user_id: user.id }, body));
+    if (res.error) throw res.error;
+    editingId = null; $('monFormTitle').textContent = 'Add monitor';
+    $('btnCancelEdit').classList.add('hidden');
+    ['mName','mUrl'].forEach(function(id){ $(id).value = ''; });
+    $('mInterval').value = 5; $('mExpected').value = 200; $('mTimeout').value = 10000;
+    loadAll();
+  } catch(e){ show($('monErr'), e.message || String(e)); }
+});
+$('btnCancelEdit').addEventListener('click', function(){
+  editingId = null; $('monFormTitle').textContent = 'Add monitor';
+  $('btnCancelEdit').classList.add('hidden');
+  ['mName','mUrl'].forEach(function(id){ $(id).value = ''; });
+});
+
+/* ---------- alert targets ---------- */
+$('aType').addEventListener('change', function(){
+  var t = $('aType').value;
+  $('aCfgTelegram').classList.toggle('hidden', t !== 'telegram');
+  $('aCfgEmail').classList.toggle('hidden', t !== 'email');
+  $('aCfgWebhook').classList.toggle('hidden', t !== 'webhook');
+});
+$('btnSaveTarget').addEventListener('click', async function(){
+  clearMsg($('alErr'));
+  var type = $('aType').value, label = $('aLabel').value.trim(), config = {};
+  if (!label){ show($('alErr'), 'Give the target a label.'); return; }
+  if (type === 'telegram'){ config = { bot_token: $('aBotToken').value.trim(), chat_id: $('aChatId').value.trim() };
+    if (!config.bot_token || !config.chat_id){ show($('alErr'), 'Bot token and chat ID are required.'); return; } }
+  if (type === 'email'){ config = { to: $('aEmailTo').value.trim() };
+    if (!config.to){ show($('alErr'), 'Destination email is required.'); return; } }
+  if (type === 'webhook'){ config = { url: $('aWebhookUrl').value.trim() };
+    if (!/^https?:\/\//.test(config.url)){ show($('alErr'), 'Enter a valid webhook URL.'); return; } }
+  try {
+    var res = await sb.from('alert_targets').insert({ user_id: user.id, type: type, label: label, config: config });
+    if (res.error) throw res.error;
+    ['aLabel','aBotToken','aChatId','aEmailTo','aWebhookUrl'].forEach(function(id){ $(id).value = ''; });
+    loadTargets();
+  } catch(e){ show($('alErr'), e.message || String(e)); }
+});
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tabs button').forEach(function(b){
+  b.addEventListener('click', function(){
+    document.querySelectorAll('.tabs button').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on');
+    ['status','incidents','monitors','alerts'].forEach(function(t){
+      $('tab-' + t).classList.toggle('hidden', t !== b.getAttribute('data-tab'));
+    });
+  });
+});
+
+/* ---------- realtime ---------- */
+async function subscribeRealtime(){
+  if (rtChannel) return;
+  rtChannel = sb.channel('uptime-live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'checks' }, function(){ loadAll(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'incidents' }, function(){ loadAll(); })
+    .subscribe();
+}
+
+/* ---------- boot ---------- */
+async function enterApp(){
+  setView('app');
+  try { await loadAll(); } catch(e){
+    setView('settings');
+    show($('settingsErr'), 'Connected, but could not load data: ' + (e.message || e) + ' — did you run the migration?');
+    return;
+  }
+  subscribeRealtime();
+}
+async function boot(){
+  var cfg = getCfg();
+  if (!cfg){ setView('settings'); return; }
+  try {
+    if (typeof supabase === 'undefined' || !supabase.createClient) throw new Error('supabase-js failed to load.');
+    sb = supabase.createClient(cfg.url, cfg.anonKey);
+    var ses = await sb.auth.getSession();
+    user = (ses.data && ses.data.session && ses.data.session.user) || null;
+    sb.auth.onAuthStateChange(function(ev, session){
+      user = (session && session.user) || null;
+      if (ev === 'SIGNED_OUT'){ setView('auth'); }
+    });
+    if (user) enterApp(); else setView('auth');
+  } catch(e){
+    setView('settings');
+    show($('settingsErr'), 'Saved connection failed: ' + (e.message || e));
+  }
+}
+boot();
+})();
+</script>
+</body>
+</html>
